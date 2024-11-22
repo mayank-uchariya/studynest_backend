@@ -1,0 +1,45 @@
+# Dependency directories
+node_modules/
+vendor/
+
+# Environment variables
+.env
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS and IDE-specific files
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.ps1
+
+# Build and runtime files
+dist/
+build/
+*.out
+*.exe
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Database files
+*.sqlite3
+*.db
+*.db-journal
+
+# Testing files
+coverage/
+.nyc_output/
