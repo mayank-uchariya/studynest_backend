@@ -3,12 +3,16 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './api/auth.js';
+import propertyAuthRoutes from './api/propertyauth.js'
+import bodyParser from 'body-parser';
 
 dotenv.config();
 
 const app = express();
 
 // Middleware
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 app.use(express.json());
 
@@ -27,6 +31,7 @@ app.get('/', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/propertyauth', propertyAuthRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5000;
