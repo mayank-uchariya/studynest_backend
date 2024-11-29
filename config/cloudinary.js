@@ -1,10 +1,18 @@
-import cloudinary from 'cloudinary';
+import { v2 as cloudinary } from 'cloudinary';
+import dotenv from 'dotenv';
 
-// Set up Cloudinary configuration
+dotenv.config();
+
 cloudinary.config({
-  cloud_name: process.env.CLOUD_NAME,
-  api_key: process.env.CLOUD_API_KEY,
-  api_secret: process.env.CLOUD_API_SECRET,
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME, // Your Cloudinary cloud name
+    api_key: process.env.CLOUDINARY_API_KEY,       // Your Cloudinary API key
+    api_secret: process.env.CLOUDINARY_API_SECRET, // Your Cloudinary API secret
 });
+
+console.log(process.env.CLOUDINARY_API_KEY)
+console.log(process.env.CLOUDINARY_CLOUD_NAME)
+console.log(process.env.CLOUDINARY_API_SECRET)
+console.log(process.env.MONGO_URI)
+console.log(process.env.JWT_SECRET)
 
 export default cloudinary;
