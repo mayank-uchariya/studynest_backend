@@ -13,8 +13,20 @@ const app = express();
 // Middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cors());
 app.use(express.json());
+
+
+
+// CORS Configuration
+const allowedOrigins = ['https://studynestt.vercel.app'];
+app.use(cors({
+  origin: allowedOrigins,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true, // Set true if cookies or credentials are used
+}));
+
+
 
 // MongoDB connection
 const mongoURI = process.env.MONGO_URI;
