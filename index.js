@@ -20,10 +20,10 @@ app.use(express.json());
 // CORS Configuration
 const allowedOrigins = ['https://studynestt.vercel.app'];
 app.use(cors({
-  origin: allowedOrigins,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true, // Set true if cookies or credentials are used
+  origin: allowedOrigins
+  // methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  // allowedHeaders: ['Content-Type', 'Authorization'],
+  // credentials: true, // Set true if cookies or credentials are used
 }));
 
 
