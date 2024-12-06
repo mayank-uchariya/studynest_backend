@@ -1,38 +1,15 @@
 import mongoose from 'mongoose';
-import User from './UserSchema.js'
+import User from './UserSchema.js';
 
 const { Schema } = mongoose;
 
-const reviewSchema = new Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: User, // Assuming 'User' is your model name
-    // required: true,
-  },
-  rating: {
-    type: Number,
-    min: 1,
-    max: 5,
-    // required: true,
-  },  
-  comment: {
-    type: String,
-    // required: true,
-  },
-});
-
-const amenitiesSchema = new Schema({
-  title: {
-    type: String,
-    // required: true,
-  },
-  items: [{
-    type: String,
-    // required: true,
-  }],
-});
-
+// Property schema
 export const propertySchema = new Schema({
+  slug: {
+    type: String,
+    unique: true,
+    required: true,
+  },
   title: {
     type: String,
     required: true,
@@ -45,7 +22,7 @@ export const propertySchema = new Schema({
     type: String,
     required: true,
     index: true,
-  },  
+  },
   country: {
     type: String,
     required: true,
@@ -58,7 +35,7 @@ export const propertySchema = new Schema({
     type: [String],
     required: true,
     validate: [array => array.length > 0, 'At least one image is required'],
-  },  
+  },
   area: {
     type: String,
     required: true,
@@ -67,14 +44,34 @@ export const propertySchema = new Schema({
     type: String,
     required: true,
   }],
-  amenities: [amenitiesSchema],
+  amenities: [{
+    title: {
+      type: String,
+    },
+    items: [{
+      type: String,
+    }],
+  }],
   rating: {
     type: Number,
     min: 1,
     max: 5,
-    // required: true,
-  },  
-  reviews: [reviewSchema],
+  },
+  reviews: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: User, // Reference to the User model
+      default: null, // Allows null values for user
+    },
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+    },
+    comment: {
+      type: String,
+    },
+  }], // Nested review schema
   views: {
     type: Number,
     default: 0,
@@ -85,6 +82,26 @@ export const propertySchema = new Schema({
   },
 }, {
   timestamps: true, // Automatically adds createdAt and updatedAt fields
+});
+
+// Pre-save hook to ensure users can only leave one review (non-null) per property
+propertySchema.pre('save', async function (next) {
+  const property = this;
+
+  // Filter non-null users from the reviews array
+  const userIds = property.reviews
+    .filter(review => review.user) // Exclude `null` users
+    .map(review => review.user.toString());
+
+  // Create a Set to get unique user IDs
+  const uniqueUserIds = new Set(userIds);
+
+  // Check for duplicates (users can leave only one review)
+  if (userIds.length !== uniqueUserIds.size) {
+    return next(new Error('Each user can only review a property once.'));
+  }
+
+  next(); // Proceed with saving if no issues
 });
 
 const Property = mongoose.model('Property', propertySchema);
