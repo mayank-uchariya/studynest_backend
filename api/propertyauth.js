@@ -58,18 +58,14 @@ router.post('/property', upload.array('images', 5), async (req, res) => {
     }
 });
 
-
-router.put('/property/:id', upload.array('images', 5), async (req, res) => {
-    const propertyId = req.params.id;
+router.put('/property/:slug', upload.array('images', 5), async (req, res) => {
+    const propertySlug = req.params.slug;
     const updateData = req.body;
     const imageUrls = req.files.map(file => file.secure_url);
 
     try {
-        const property = await Property.findByIdAndUpdate(
-            propertyId,
-            { ...updateData, images: imageUrls },
-            { new: true, runValidators: true }
-        );
+        const property = await Property.findOne({ slug: propertySlug });
+
         if (!property) {
             return res.status(404).json({ message: 'Property not found' });
         }
@@ -87,7 +83,11 @@ router.put('/property/:id', upload.array('images', 5), async (req, res) => {
 
         Object.assign(property, updateData);
         await property.save();
-        res.status(200).json({ message: 'Property updated successfully', updatedProperty });
+
+        res.status(200).json({
+            message: 'Property updated successfully',
+            updatedProperty: property,
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error', error });
@@ -95,10 +95,10 @@ router.put('/property/:id', upload.array('images', 5), async (req, res) => {
 });
 
 router.delete('/property/:id', async (req, res) => {
-    const propertyId = req.params.id;
+    const propertySlug = req.params.slug;
 
     try {
-        const property = await Property.findById(propertyId);
+        const property = await Property.findOne({ slug: propertySlug });
         if (!property) {
             return res.status(404).json({ message: 'Property not found' });
         }
@@ -137,11 +137,11 @@ router.get('/properties', async (req, res) => {
 });
 
 
-router.get('/property/:id', async (req, res) => {
-    const propertyId = req.params.id;
+router.get('/property/:slug', async (req, res) => {
+    const propertySlug = req.params.slug;
 
     try {
-        const property = await Property.findById(propertyId);
+        const property = await Property.findOne({ slug: propertySlug });
         if (!property) {
             return res.status(404).json({ message: 'Property not found' });
         }
