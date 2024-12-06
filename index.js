@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './api/auth.js';
+import adminRoutes from './api/admin.js';
 import propertyAuthRoutes from './api/propertyauth.js'
 import bodyParser from 'body-parser';
 
@@ -42,6 +43,7 @@ app.get('/', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/propertyauth', propertyAuthRoutes);
 
 // Start server
