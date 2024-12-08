@@ -28,6 +28,18 @@ router.post("/property", upload.array("images", 5), async (req, res) => {
     }
 
     const propertyData = req.body;
+
+    // Parse amenities if it's a JSON string
+    if (propertyData.amenities) {
+      try {
+        propertyData.amenities = new Map(
+          Object.entries(JSON.parse(propertyData.amenities))
+        );
+      } catch (err) {
+        return res.status(400).json({ message: "Invalid amenities format" });
+      }
+    }
+
     const imageUrls = req.files.map((file) => file.path); // Use .path for Cloudinary URLs
 
     const newProperty = new Property({
@@ -49,6 +61,16 @@ router.post("/property", upload.array("images", 5), async (req, res) => {
 router.put("/property/:id", upload.array("images", 5), async (req, res) => {
   const propertyId = req.params.id;
   const updateData = req.body;
+
+  // Parse amenities if it's a string
+  if (updateData.amenities && typeof updateData.amenities === "string") {
+    try {
+      updateData.amenities = JSON.parse(updateData.amenities);
+    } catch (err) {
+      return res.status(400).json({ message: "Invalid amenities data" });
+    }
+  }
+
   const imageUrls = req.files.map((file) => file.secure_url);
 
   try {
