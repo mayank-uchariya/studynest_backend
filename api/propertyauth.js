@@ -19,56 +19,54 @@ const deleteImageFromCloudinary = async (publicId) => {
 // Create a new property with image upload
 router.post("/property", upload.array("images", 5), async (req, res) => {
   try {
-    // Log the request for debugging
-    console.log("Request files:", req.files);
-    console.log("Request body:", req.body);
+    const {
+      slug,
+      title,
+      price,
+      city,
+      country,
+      description,
+      area,
+      services,
+      amenities,
+    } = req.body;
 
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ message: "No files uploaded" });
-    }
+    // Cloudinary images
+    const images = req.files.map((file) => file.path);
 
-    const propertyData = req.body;
-
-    // Parse amenities if it's a JSON string
-    if (propertyData.amenities) {
-      try {
-        propertyData.amenities = new Map(
-          Object.entries(JSON.parse(propertyData.amenities))
-        );
-      } catch (err) {
-        return res.status(400).json({ message: "Invalid amenities format" });
-      }
-    }
-
-    const imageUrls = req.files.map((file) => file.path); // Use .path for Cloudinary URLs
-
-    const newProperty = new Property({
-      ...propertyData,
-      images: imageUrls,
+    const newProperty = await Property.create({
+      slug,
+      title,
+      price,
+      city,
+      country,
+      description,
+      area,
+      services: JSON.parse(services),  // Convert string back to array
+      amenities: JSON.parse(amenities), // Convert string back to object
+      images,
     });
 
-    await newProperty.save();
-    res.status(201).json({
-      message: "Property created successfully",
-      property: newProperty,
-    });
+    res.status(201).json(newProperty);
   } catch (error) {
-    console.error("Error creating property:", error);
-    res.status(500).json({ message: "Server error", error });
+    console.error("Error adding property:", error.message);
+    res.status(500).json({ message: "Failed to add property." });
   }
 });
+
 
 router.put("/property/:id", upload.array("images", 5), async (req, res) => {
   const propertyId = req.params.id;
   const updateData = req.body;
 
-  // Parse amenities if it's a string
-  if (updateData.amenities && typeof updateData.amenities === "string") {
-    try {
-      updateData.amenities = JSON.parse(updateData.amenities);
-    } catch (err) {
-      return res.status(400).json({ message: "Invalid amenities data" });
-    }
+  if (updateData.amenities) {
+    updateData.amenities = new Map(
+      Object.entries(JSON.parse(updateData.amenities))
+    );
+  }
+
+  if (updateData.services) {
+    updateData.services = JSON.parse(updateData.services); // Parse services
   }
 
   const imageUrls = req.files.map((file) => file.secure_url);
