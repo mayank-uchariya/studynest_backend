@@ -1,11 +1,11 @@
-import express from 'express';
-import mongoose from 'mongoose';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import authRoutes from './api/auth.js';
-import adminRoutes from './api/admin.js';
-import propertyAuthRoutes from './api/propertyauth.js'
-import bodyParser from 'body-parser';
+import express from "express";
+import mongoose from "mongoose";
+import cors from "cors";
+import dotenv from "dotenv";
+import authRoutes from "./api/auth.js";
+import adminRoutes from "./api/admin.js";
+import propertyAuthRoutes from "./api/propertyauth.js";
+import bodyParser from "body-parser";
 
 dotenv.config();
 
@@ -16,9 +16,9 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 
-
 const allowedOrigins = [
   "http://localhost:3000",
+  "http://127.0.0.1:3000",
   "https://studynestfrontend.vercel.app",
 ];
 
@@ -36,25 +36,23 @@ app.use(
   })
 );
 
-
-
 // MongoDB connection
 const mongoURI = process.env.MONGO_URI;
 // console.log(mongoURI)
 mongoose
   .connect(mongoURI)
-  .then(() => console.log('Connected to MongoDB Atlas'))
-  .catch((err) => console.error('Error connecting to MongoDB:', err));
+  .then(() => console.log("Connected to MongoDB Atlas"))
+  .catch((err) => console.error("Error connecting to MongoDB:", err));
 
 // Example route
-app.get('/', (req, res) => {
-  res.send('Hello from the backend!');
+app.get("/", (req, res) => {
+  res.send("Hello from the backend!");
 });
 
 // API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/propertyauth', propertyAuthRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/propertyauth", propertyAuthRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5000;
