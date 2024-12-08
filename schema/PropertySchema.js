@@ -47,10 +47,18 @@ export const propertySchema = new Schema(
         required: true,
       },
     ],
-    amenities: {
-      type: Map, // Use a Map for dynamic keys
-      of: [String], // Each key will have an array of strings
-    },
+    amenities: [
+      {
+        title: {
+          type: String,
+        },
+        items: [
+          {
+            type: String,
+          },
+        ],
+      },
+    ],
     rating: {
       type: Number,
       min: 1,

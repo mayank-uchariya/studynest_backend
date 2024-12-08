@@ -18,7 +18,7 @@ app.use(express.json());
 
 
 
-// CORS Configuration
+// // CORS Configuration
 app.use(
 	cors({
 		origin: "*",

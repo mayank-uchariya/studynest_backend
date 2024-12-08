@@ -19,56 +19,36 @@ const deleteImageFromCloudinary = async (publicId) => {
 // Create a new property with image upload
 router.post("/property", upload.array("images", 5), async (req, res) => {
   try {
-    const {
-      slug,
-      title,
-      price,
-      city,
-      country,
-      description,
-      area,
-      services,
-      amenities,
-    } = req.body;
+    // Log the request for debugging
+    console.log("Request files:", req.files);
+    console.log("Request body:", req.body);
 
-    // Cloudinary images
-    const images = req.files.map((file) => file.path);
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: "No files uploaded" });
+    }
 
-    const newProperty = await Property.create({
-      slug,
-      title,
-      price,
-      city,
-      country,
-      description,
-      area,
-      services: JSON.parse(services),  // Convert string back to array
-      amenities: JSON.parse(amenities), // Convert string back to object
-      images,
+    const propertyData = req.body;
+    const imageUrls = req.files.map((file) => file.path); // Use .path for Cloudinary URLs
+
+    const newProperty = new Property({
+      ...propertyData,
+      images: imageUrls,
     });
 
-    res.status(201).json(newProperty);
+    await newProperty.save();
+    res.status(201).json({
+      message: "Property created successfully",
+      property: newProperty,
+    });
   } catch (error) {
-    console.error("Error adding property:", error.message);
-    res.status(500).json({ message: "Failed to add property." });
+    console.error("Error creating property:", error);
+    res.status(500).json({ message: "Server error", error });
   }
 });
-
 
 router.put("/property/:id", upload.array("images", 5), async (req, res) => {
   const propertyId = req.params.id;
   const updateData = req.body;
-
-  if (updateData.amenities) {
-    updateData.amenities = new Map(
-      Object.entries(JSON.parse(updateData.amenities))
-    );
-  }
-
-  if (updateData.services) {
-    updateData.services = JSON.parse(updateData.services); // Parse services
-  }
-
   const imageUrls = req.files.map((file) => file.secure_url);
 
   try {
