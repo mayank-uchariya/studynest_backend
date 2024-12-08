@@ -27,7 +27,15 @@ router.post("/property", upload.array("images", 5), async (req, res) => {
       return res.status(400).json({ message: "No files uploaded" });
     }
 
-    const propertyData = req.body;
+    // const propertyData = req.body;
+
+    // Parse JSON fields from the request body
+    const propertyData = {
+      ...req.body,
+      services: JSON.parse(req.body.services || "[]"),
+      amenities: JSON.parse(req.body.amenities || "[]"),
+    };
+    
     const imageUrls = req.files.map((file) => file.path); // Use .path for Cloudinary URLs
 
     const newProperty = new Property({
