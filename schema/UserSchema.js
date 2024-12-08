@@ -58,9 +58,13 @@ export const userSchema = new mongoose.Schema(
       type: Number, // Duration in days
       min: [1, "Stay duration must be at least 1 day"],
     },
+    university: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     dateOfBirth: {
       type: Date,
-      required: true,
     },
     nationality: {
       type: String,

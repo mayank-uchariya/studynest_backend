@@ -37,7 +37,7 @@ const hashPassword = async (password) => {
 };
 
 router.post("/signup", async (req, res) => {
-  const { name, email, phone, password, dateofBirth, nationality, gender } =
+  const { name, email, phone, password, university, nationality, gender } =
     req.body;
 
   // Check if the user already exists
@@ -53,7 +53,7 @@ router.post("/signup", async (req, res) => {
   // Hash the password
   const hashedPassword = await hashPassword(password);
 
-  const dob = new Date(dateofBirth);
+  // const dob = new Date(dateofBirth);
 
   // Calculate stay duration
   // const stayDuration = Math.ceil((new Date(moveOutDate) - new Date(moveInDate)) / (1000 * 60 * 60 * 24));
@@ -65,7 +65,7 @@ router.post("/signup", async (req, res) => {
       email,
       phone,
       password: hashedPassword,
-      dateOfBirth: dob,
+      university,
       nationality,
       gender,
     });
