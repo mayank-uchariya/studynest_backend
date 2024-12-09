@@ -77,6 +77,15 @@ router.put("/property/:id", upload.array("images", 5), async (req, res) => {
       property.images = [...property.images, ...imageUrls]; // Add new images
     }
 
+    // Parse `services` and `amenities` if they are strings
+    if (typeof updateData.services === "string") {
+      updateData.services = JSON.parse(updateData.services);
+    }
+
+    if (typeof updateData.amenities === "string") {
+      updateData.amenities = JSON.parse(updateData.amenities);
+    }
+
     Object.assign(property, updateData);
     await property.save();
 
