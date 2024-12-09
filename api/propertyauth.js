@@ -74,7 +74,9 @@ router.put("/property/:id", upload.array("images", 5), async (req, res) => {
       }
       property.images = imageUrls; // Replace images
     } else {
-      property.images = [...property.images, ...imageUrls]; // Add new images
+      // property.images = [...property.images, ...imageUrls]; // Add new images
+      const newImageUrls = req.files.map((file) => file.secure_url);
+      property.images.push(...newImageUrls);
     }
 
     // Parse `services` and `amenities` if they are strings
