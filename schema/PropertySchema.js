@@ -32,6 +32,10 @@ export const propertySchema = new Schema(
       type: String,
       required: true,
     },
+    university: {
+      type: String,
+      required: true,
+    },
     images: {
       type: [String],
       required: true,
