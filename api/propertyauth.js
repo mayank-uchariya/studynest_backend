@@ -57,7 +57,6 @@ router.post("/property", upload.array("images", 5), async (req, res) => {
 router.put("/property/:id", upload.array("images", 5), async (req, res) => {
   const propertyId = req.params.id;
   const updateData = req.body;
-  const imageUrls = req.files.map((file) => file.secure_url);
 
   try {
     const property = await Property.findById(propertyId);
@@ -66,16 +65,14 @@ router.put("/property/:id", upload.array("images", 5), async (req, res) => {
       return res.status(404).json({ message: "Property not found" });
     }
 
+    // Handle image uploads
     if (req.body.replaceImages === "true") {
-      // Optionally delete old images from Cloudinary
-      for (let image of property.images) {
-        const publicId = image.split("/").pop().split(".")[0];
-        await deleteImageFromCloudinary(publicId);
-      }
-      property.images = imageUrls; // Replace images
-    } else {
-      // property.images = [...property.images, ...imageUrls]; // Add new images
-      const newImageUrls = req.files.map((file) => file.secure_url);
+      // Replace all images
+      const imageUrls = req.files.map((file) => file.path || file.secure_url);
+      property.images = imageUrls;
+    } else if (req.files.length > 0) {
+      // Add new images
+      const newImageUrls = req.files.map((file) => file.path || file.secure_url);
       property.images.push(...newImageUrls);
     }
 
