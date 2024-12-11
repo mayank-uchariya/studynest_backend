@@ -233,4 +233,33 @@ router.get("/properties/search", async (req, res) => {
   }
 });
 
+router.get("/properties/filter", async (req, res) => {
+  const { page = 1, limit = 10, country, city, minPrice, maxPrice } = req.query;
+
+  try {
+    const filters = {};
+
+    if (country) filters.country = country;
+    if (city) filters.city = city;
+    if (minPrice) filters.price = { $gte: Number(minPrice) };
+    if (maxPrice)
+      filters.price = { ...filters.price, $lte: Number(maxPrice) };
+
+    const properties = await Property.find(filters)
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+    const total = await Property.countDocuments(filters);
+
+    res.status(200).json({
+      message: "Properties retrieved successfully",
+      properties,
+      pagination: { total, page: Number(page), limit: Number(limit) },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+
 export default router;
