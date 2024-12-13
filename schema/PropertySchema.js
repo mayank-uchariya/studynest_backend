@@ -63,6 +63,18 @@ export const propertySchema = new Schema(
         ],
       },
     ],
+    roomTypes: [
+      {
+        title: {
+          type: String,
+          // required: true,
+        },
+        price: {
+          type: Number,
+          // required: true,
+        },
+      },
+    ],
     rating: {
       type: Number,
       min: 1,

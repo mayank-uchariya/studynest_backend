@@ -34,6 +34,7 @@ router.post("/property", upload.array("images", 5), async (req, res) => {
       ...req.body,
       services: JSON.parse(req.body.services || "[]"),
       amenities: JSON.parse(req.body.amenities || "[]"),
+      roomTypes: JSON.parse(req.body.roomTypes || "[]"),
     };
     
     const imageUrls = req.files.map((file) => file.path); // Use .path for Cloudinary URLs
@@ -83,6 +84,10 @@ router.put("/property/:id", upload.array("images", 5), async (req, res) => {
 
     if (typeof updateData.amenities === "string") {
       updateData.amenities = JSON.parse(updateData.amenities);
+    }
+    
+    if (typeof updateData.roomTypes === "string") {
+      updateData.roomTypes = JSON.parse(updateData.roomTypes);
     }
 
     Object.assign(property, updateData);
