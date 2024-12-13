@@ -36,7 +36,7 @@ router.post("/property", upload.array("images", 5), async (req, res) => {
       amenities: JSON.parse(req.body.amenities || "[]"),
       roomTypes: JSON.parse(req.body.roomTypes || "[]"),
     };
-    
+
     const imageUrls = req.files.map((file) => file.path); // Use .path for Cloudinary URLs
 
     const newProperty = new Property({
@@ -73,7 +73,9 @@ router.put("/property/:id", upload.array("images", 5), async (req, res) => {
       property.images = imageUrls;
     } else if (req.files.length > 0) {
       // Add new images
-      const newImageUrls = req.files.map((file) => file.path || file.secure_url);
+      const newImageUrls = req.files.map(
+        (file) => file.path || file.secure_url
+      );
       property.images.push(...newImageUrls);
     }
 
@@ -85,7 +87,7 @@ router.put("/property/:id", upload.array("images", 5), async (req, res) => {
     if (typeof updateData.amenities === "string") {
       updateData.amenities = JSON.parse(updateData.amenities);
     }
-    
+
     if (typeof updateData.roomTypes === "string") {
       updateData.roomTypes = JSON.parse(updateData.roomTypes);
     }
@@ -247,8 +249,7 @@ router.get("/properties/filter", async (req, res) => {
     if (country) filters.country = country;
     if (city) filters.city = city;
     if (minPrice) filters.price = { $gte: Number(minPrice) };
-    if (maxPrice)
-      filters.price = { ...filters.price, $lte: Number(maxPrice) };
+    if (maxPrice) filters.price = { ...filters.price, $lte: Number(maxPrice) };
 
     const properties = await Property.find(filters)
       .skip((page - 1) * limit)
@@ -265,6 +266,5 @@ router.get("/properties/filter", async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 });
-
 
 export default router;
