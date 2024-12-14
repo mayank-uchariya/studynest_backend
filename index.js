@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import authRoutes from "./api/auth.js";
 import adminRoutes from "./api/admin.js";
 import propertyAuthRoutes from "./api/propertyauth.js";
+import testimonialRoutes from './api/testimonial.js'
 import bodyParser from "body-parser";
 
 dotenv.config();
@@ -53,6 +54,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/propertyauth", propertyAuthRoutes);
+app.use("/api/testimonial", testimonialRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5000;
