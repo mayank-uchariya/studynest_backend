@@ -7,6 +7,7 @@ import adminRoutes from "./api/admin.js";
 import propertyAuthRoutes from "./api/propertyauth.js";
 import testimonialRoutes from './api/testimonial.js'
 import bodyParser from "body-parser";
+import nodemailer from "nodemailer";
 
 dotenv.config();
 
@@ -55,6 +56,47 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/propertyauth", propertyAuthRoutes);
 app.use("/api/testimonial", testimonialRoutes);
+
+
+
+// Endpoint to handle form submission
+app.post("/send-query", async (req, res) => {
+  const { name, email, phone, country, message } = req.body;
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: email,
+      to: process.env.RECEIVER_EMAIL,
+      subject: `Customer Query from ${name}`,
+      text: `
+        Name: ${name}
+        Email: ${email}
+        Phone: ${phone}
+        Travelling Country: ${country}
+        Message: ${message}
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ message: "Query sent successfully!" });
+  } catch (error) {
+    console.error("Error sending query:", error);
+    res.status(500).json({ message: "Failed to send query" });
+  }
+});
+
+
+
+
 
 // Start server
 const PORT = process.env.PORT || 5000;
