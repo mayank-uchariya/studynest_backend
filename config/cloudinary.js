@@ -11,21 +11,24 @@ cloudinary.config({
 
 const testUpload = async () => {
   try {
-    const result = await cloudinary.uploader.upload('https://via.placeholder.com/150', {
-      folder: 'test',
-    });
-    console.log('Cloudinary Test Upload Result:', result);
+    const result = await cloudinary.uploader.upload(
+      "https://via.placeholder.com/150",
+      {
+        folder: "test",
+      }
+    );
+    console.log("Cloudinary Test Upload Result:", result);
   } catch (error) {
-    console.error('Error connecting to Cloudinary:', error);
+    console.error("Error connecting to Cloudinary:", error);
   }
 };
 
 // testUpload();
 
-console.log(process.env.CLOUDINARY_API_KEY)
-console.log(process.env.CLOUDINARY_CLOUD_NAME)
-console.log(process.env.CLOUDINARY_API_SECRET)
-console.log(process.env.MONGO_URI)
-console.log(process.env.JWT_SECRET)
+console.log(process.env.CLOUDINARY_API_KEY);
+console.log(process.env.CLOUDINARY_CLOUD_NAME);
+console.log(process.env.CLOUDINARY_API_SECRET);
+console.log(process.env.MONGO_URI);
+console.log(process.env.JWT_SECRET);
 
 export default cloudinary;
