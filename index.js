@@ -29,14 +29,8 @@ const allowedOrigins = [
 // // CORS Configuration
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true); // Allow requests from allowed origins
-      } else {
-        callback(new Error("Not allowed by CORS")); // Block other origins
-      }
-    },
-    credentials: true, // Allow cookies to be sent with requests
+    origin: allowedOrigins,
+    credentials: false, // Set to false if cookies are not used
   })
 );
 
