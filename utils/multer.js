@@ -2,13 +2,22 @@ import cloudinary from '../config/cloudinary.js';
 import multer from 'multer';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
-const storage = new CloudinaryStorage({
+const imageStorage = new CloudinaryStorage({
     cloudinary,
     params: {
         folder: 'properties',
-        allowed_formats: ['jpg', 'jpeg', 'png', 'xlsx', 'xls'],
-        resource_type: 'raw',
+        allowed_formats: ['jpg', 'jpeg', 'png']
     },
+});
+
+// Separate storage configuration for Excel files
+const excelStorage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+        folder: 'properties/excel',
+        allowed_formats: ['xlsx', 'xls'],
+        resource_type: 'raw'
+    }
 });
 
 // Add file filter to double-check file type
@@ -20,9 +29,13 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
-const upload = multer({ 
-    storage: storage,
-    fileFilter: fileFilter
+const uploadImage = multer({ 
+    storage: imageStorage,
 });
 
-export default upload;
+const uploadExcel = multer({
+    storage: excelStorage,
+    fileFilter,
+});
+
+export {uploadImage, uploadExcel};
