@@ -38,8 +38,8 @@ export const propertySchema = new Schema(
     },
     images: {
       type: [String],
-      required: true,
-      validate: [(array) => array.length > 0, "At least one image is required"],
+      // required: true,
+      // validate: [(array) => array.length > 0, "At least one image is required"],
     },
     area: {
       type: String,

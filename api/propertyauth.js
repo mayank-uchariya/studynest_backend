@@ -16,6 +16,55 @@ const deleteImageFromCloudinary = async (publicId) => {
   }
 };
 
+
+router.post('/upload-properties', upload.single('file'), async (req, res) => {
+  try {
+      const filePath = req.file.path;
+
+      // Read the Excel file
+      const workbook = XLSX.readFile(filePath);
+      const sheetName = workbook.SheetNames[0];
+      const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+      // Validate and map data to the Property schema
+      const propertiesToSave = data.map((item) => ({
+          slug: item.title.toLowerCase().replace(/\s+/g, "-"), // Generate unique slug if not provided
+          title: item.title,
+          price: item.price,
+          city: item.city,
+          country: item.country,
+          description: item.description,
+          university: item.university,
+          // images: item.images?.split(',') || [], // Expecting images as a comma-separated string
+          area: item.area,
+          services: item.services?.split(',') || [], // Expecting services as a comma-separated string
+          amenities: item.amenities
+              ? item.amenities.split(';').map((amenity) => {
+                    const [title, items] = amenity.split(':');
+                    return { title, items: items?.split(',') || [] };
+                })
+              : [],
+          roomTypes: item.roomTypes
+              ? item.roomTypes.split(';').map((roomType) => {
+                    const [title, price] = roomType.split(':');
+                    return { title, price: Number(price) };
+                })
+              : [],
+          rating: item.rating || 0,
+          views: item.views || 0,
+      }));
+
+      // Save properties to the database
+      await Property.insertMany(propertiesToSave);
+
+      res.status(200).json({ message: 'Properties uploaded successfully!' });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error uploading properties', error });
+  }
+});
+
+
 // Create a new property with image upload
 router.post("/property", upload.array("images", 5), async (req, res) => {
   try {

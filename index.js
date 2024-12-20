@@ -29,10 +29,18 @@ const allowedOrigins = [
 // // CORS Configuration
 app.use(
   cors({
-    origin: allowedOrigins,
-    credentials: false, // Set to false if cookies are not used
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.some(o => typeof o === "string" ? o === origin : o.test(origin))) {
+        callback(null, true);
+      } else {
+        console.error(`Blocked Origin: ${origin}`); // Log rejected origins
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
   })
 );
+
 
 // MongoDB connection
 const mongoURI = process.env.MONGO_URI;
@@ -90,6 +98,41 @@ app.post("/send-query", async (req, res) => {
   }
 });
 
+
+app.post("/property-query", async (req, res) => {
+  const { fullName, phoneNumber, email, university, message, Property } = req.body;
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: email,
+      to: process.env.RECEIVER_EMAIL,
+      subject: `Property Query from ${fullName}`,
+      text: `
+        Full Name: ${fullName}
+        Phone Number: ${phoneNumber}
+        Email: ${email}
+        University: ${university}
+        Message: ${message}
+        Property Link: ${Property}
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ message: "Query sent successfully!" });
+  } catch (error) {
+    console.error("Error sending query:", error);
+    res.status(500).json({ message: "Failed to send query" });
+  }
+});
 
 
 
