@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import authRoutes from "./api/auth.js";
 import adminRoutes from "./api/admin.js";
 import propertyAuthRoutes from "./api/propertyauth.js";
-import testimonialRoutes from './api/testimonial.js'
+import testimonialRoutes from "./api/testimonial.js";
 import bodyParser from "body-parser";
 import nodemailer from "nodemailer";
 
@@ -21,26 +21,24 @@ app.use(express.json());
 const allowedOrigins = [
   "http://localhost:3000",
   "http://127.0.0.1:3000",
+  "studynests.com",
   "http://studynests.com",
   "https://studynests.com",
   "https://studynestfrontend.vercel.app",
 ];
 
-// // CORS Configuration
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.some(o => typeof o === "string" ? o === origin : o.test(origin))) {
-        callback(null, true);
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true); // Allow requests from allowed origins
       } else {
-        console.error(`Blocked Origin: ${origin}`); // Log rejected origins
-        callback(new Error("Not allowed by CORS"));
+        callback(new Error("Not allowed by CORS")); // Block other origins
       }
     },
-    credentials: true,
+    credentials: true, // Allow cookies to be sent with requests
   })
 );
-
 
 // MongoDB connection
 const mongoURI = process.env.MONGO_URI;
@@ -60,8 +58,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/propertyauth", propertyAuthRoutes);
 app.use("/api/testimonial", testimonialRoutes);
-
-
 
 // Endpoint to handle form submission
 app.post("/send-query", async (req, res) => {
@@ -98,9 +94,9 @@ app.post("/send-query", async (req, res) => {
   }
 });
 
-
 app.post("/property-query", async (req, res) => {
-  const { fullName, phoneNumber, email, university, message, Property } = req.body;
+  const { fullName, phoneNumber, email, university, message, Property } =
+    req.body;
 
   try {
     const transporter = nodemailer.createTransport({
@@ -133,9 +129,6 @@ app.post("/property-query", async (req, res) => {
     res.status(500).json({ message: "Failed to send query" });
   }
 });
-
-
-
 
 // Start server
 const PORT = process.env.PORT || 5000;
