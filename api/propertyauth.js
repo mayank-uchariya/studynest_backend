@@ -1,6 +1,6 @@
 import express from "express";
 import Property from "../schema/PropertySchema.js";
-import upload from "../utils/multer.js";
+import {upload, uploadExcel} from "../utils/multer.js";
 import cloudinary from "../config/cloudinary.js";
 
 const router = express.Router();
@@ -17,7 +17,7 @@ const deleteImageFromCloudinary = async (publicId) => {
 };
 
 
-router.post('/upload-properties', upload.single('file'), async (req, res) => {
+router.post('/upload-properties', uploadExcel.single('file'), async (req, res) => {
   try {
       const filePath = req.file.path;
 
