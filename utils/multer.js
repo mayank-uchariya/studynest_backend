@@ -7,6 +7,7 @@ const storage = new CloudinaryStorage({
     params: {
         folder: 'properties',
         allowed_formats: ['jpg', 'jpeg', 'png', 'xlsx'],
+        resource_type: 'raw',
     },
 });
 
