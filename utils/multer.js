@@ -1,6 +1,9 @@
 import cloudinary from '../config/cloudinary.js';
 import multer from 'multer';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import fs from 'fs';
+import path from 'path';
+
 
 const imageStorage = new CloudinaryStorage({
     cloudinary,
@@ -10,15 +13,23 @@ const imageStorage = new CloudinaryStorage({
     },
 });
 
-// Local storage for Excel files
+
+// Ensure the 'uploads' directory exists
+const uploadsDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+
+// Excel file storage configuration
 const excelStorage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // Save Excel files in the 'uploads' directory
+      cb(null, uploadsDir); // Save Excel files in the 'uploads' directory
     },
     filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname}`);
+      cb(null, `${Date.now()}-${file.originalname}`);
     },
-});
+  });
 
 
 // File filter to allow only Excel files
