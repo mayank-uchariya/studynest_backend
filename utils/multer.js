@@ -38,4 +38,5 @@ const uploadExcel = multer({
     fileFilter: excelFileFilter
 }) 
 
-export default {uploadImage, uploadExcel};
+export { uploadImage, uploadExcel };
+
