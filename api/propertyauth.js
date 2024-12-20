@@ -1,6 +1,6 @@
 import express from "express";
 import Property from "../schema/PropertySchema.js";
-import {upload, uploadExcel} from "../utils/multer.js";
+import {uploadImage, uploadExcel} from "../utils/multer.js";
 import cloudinary from "../config/cloudinary.js";
 
 const router = express.Router();
@@ -66,7 +66,7 @@ router.post('/upload-properties', uploadExcel.single('file'), async (req, res) =
 
 
 // Create a new property with image upload
-router.post("/property", upload.array("images", 5), async (req, res) => {
+router.post("/property", uploadImage.array("images", 5), async (req, res) => {
   try {
     // Log the request for debugging
     console.log("Request files:", req.files);
@@ -104,7 +104,7 @@ router.post("/property", upload.array("images", 5), async (req, res) => {
   }
 });
 
-router.put("/property/:id", upload.array("images", 5), async (req, res) => {
+router.put("/property/:id", uploadImage.array("images", 5), async (req, res) => {
   const propertyId = req.params.id;
   const updateData = req.body;
 

@@ -2,7 +2,7 @@ import cloudinary from '../config/cloudinary.js';
 import multer from 'multer';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
-const storage = new CloudinaryStorage({
+const imageStorage = new CloudinaryStorage({
     cloudinary,
     params: {
         folder: 'properties',
@@ -32,10 +32,10 @@ const excelFileFilter = (req, file, cb) => {
 };
 
 
-const upload = multer({ storage: storage });
+const uploadImage = multer({ storage: imageStorage });
 const uploadExcel = multer({
     storage: excelStorage,
     fileFilter: excelFileFilter
 }) 
 
-export default {upload, uploadExcel};
+export default {uploadImage, uploadExcel};
