@@ -2,6 +2,8 @@ import express from "express";
 import Property from "../schema/PropertySchema.js";
 import upload from "../utils/multer.js";
 import cloudinary from "../config/cloudinary.js";
+import XLSX from 'xlsx';
+
 
 const router = express.Router();
 
@@ -19,6 +21,10 @@ const deleteImageFromCloudinary = async (publicId) => {
 
 router.post('/upload-properties', upload.single('file'), async (req, res) => {
   try {
+      if (!req.file) {
+          return res.status(400).json({ message: 'No file uploaded' });
+      }
+
       const filePath = req.file.path;
 
       // Read the Excel file
@@ -26,41 +32,69 @@ router.post('/upload-properties', upload.single('file'), async (req, res) => {
       const sheetName = workbook.SheetNames[0];
       const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-      // Validate and map data to the Property schema
+      if (!data || data.length === 0) {
+          return res.status(400).json({ message: 'Excel file is empty or improperly formatted' });
+      }
+
+      // Validate required fields
+      const requiredFields = ['title', 'price', 'city', 'country', 'description', 'university', 'area', 'services', 'amenities', 'roomTypes'];
+      const missingFields = data.some(item => 
+          requiredFields.some(field => !item[field])
+      );
+
+      if (missingFields) {
+          return res.status(400).json({ 
+              message: 'Some entries are missing required fields',
+              requiredFields 
+          });
+      }
+
+      // Map and save properties
       const propertiesToSave = data.map((item) => ({
-          slug: item.title.toLowerCase().replace(/\s+/g, "-"), // Generate unique slug if not provided
-          title: item.title,
-          price: item.price,
-          city: item.city,
-          country: item.country,
-          description: item.description,
-          university: item.university,
-          // images: item.images?.split(',') || [], // Expecting images as a comma-separated string
+          slug: item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+          title: item.title?.trim(),
+          price: Number(item.price),
+          city: item.city?.trim(),
+          country: item.country?.trim(),
+          description: item.description?.trim(),
+          university: item.university?.trim(),
           area: item.area,
-          services: item.services?.split(',') || [], // Expecting services as a comma-separated string
+          services: item.services ? item.services.split(',').map(s => s.trim()) : [],
           amenities: item.amenities
               ? item.amenities.split(';').map((amenity) => {
-                    const [title, items] = amenity.split(':');
-                    return { title, items: items?.split(',') || [] };
-                })
+                  const [title, items] = amenity.split(':').map(s => s.trim());
+                  return { 
+                      title, 
+                      items: items ? items.split(',').map(i => i.trim()) : []
+                  };
+              })
               : [],
           roomTypes: item.roomTypes
               ? item.roomTypes.split(';').map((roomType) => {
-                    const [title, price] = roomType.split(':');
-                    return { title, price: Number(price) };
-                })
+                  const [title, price] = roomType.split(':').map(s => s.trim());
+                  return { 
+                      title: title.trim(), 
+                      price: Number(price) || 0 
+                  };
+              })
               : [],
-          rating: item.rating || 0,
-          views: item.views || 0,
+          rating: Number(item.rating) || 0,
+          views: Number(item.views) || 0,
       }));
 
       // Save properties to the database
       await Property.insertMany(propertiesToSave);
 
-      res.status(200).json({ message: 'Properties uploaded successfully!' });
+      res.status(200).json({ 
+          message: 'Properties uploaded successfully!',
+          count: propertiesToSave.length
+      });
   } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Error uploading properties', error });
+      console.error('Property upload error:', error);
+      res.status(500).json({ 
+          message: 'Error uploading properties', 
+          error: error.message 
+      });
   }
 });
 
