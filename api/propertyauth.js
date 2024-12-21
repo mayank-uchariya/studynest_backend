@@ -1,10 +1,13 @@
 import express from "express";
 import Property from "../schema/PropertySchema.js";
-import {uploadImage, uploadExcel} from "../utils/multer.js";
+import {
+  uploadImage,
+  uploadExcel,
+  uploadExcelToCloudinary,
+} from "../utils/multer.js";
 import cloudinary from "../config/cloudinary.js";
-import XLSX from 'xlsx';
-
-
+import XLSX from "xlsx";
+import axios from "axios";
 
 const router = express.Router();
 
@@ -19,69 +22,114 @@ const deleteImageFromCloudinary = async (publicId) => {
   }
 };
 
-
-
 const processExcelFile = async (req, res) => {
   try {
-    const { secure_url } = req.body; // Cloudinary secure URL from the request
+    const { secure_url } = req.body; // URL of the uploaded Excel file
     if (!secure_url) {
-      return res.status(400).json({ error: 'No file URL provided' });
+      return res.status(400).json({ error: "No file URL provided" });
     }
 
     // Step 1: Download the Excel file
-    const response = await axios.get(secure_url, { responseType: 'arraybuffer' });
+    const response = await axios.get(secure_url, {
+      responseType: "arraybuffer",
+    });
 
-    // Step 2: Parse the Excel file
-    const workbook = XLSX.read(response.data, { type: 'buffer' });
+    // Step 2: Parse the Excel file into JSON
+    const workbook = XLSX.read(response.data, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-    // Step 3: Save properties to the database
+    // Step 3: Process the JSON data and map it to the schema
     const addedProperties = [];
     for (const property of jsonData) {
-      const newProperty = new Property({
-        name: property.name,
-        location: property.location,
-        price: property.price,
-        image: property.image,
-      });
-      const savedProperty = await newProperty.save();
-      addedProperties.push(savedProperty);
-    }
+      try {
+        // Parse the amenities into an array of objects
+        const amenities = property.amenities.split(";").map((category) => {
+          const [title, items] = category.split(":");
+          return {
+            title: title.trim(),
+            items: items.split(",").map((item) => item.trim()),
+          };
+        });
 
-    res.status(200).json({ message: 'Properties added successfully', addedProperties });
-  } catch (error) {
-    console.error('Error processing Excel file:', error.message);
-    res.status(500).json({ error: 'Failed to process Excel file' });
-  }
-};
+        // Parse room types into an array of objects
+        const roomTypes = property.roomTypes.split(";").map((roomType) => {
+          const [title, price] = roomType.split(":");
+          return {
+            title: title.trim(),
+            price: parseFloat(price.trim()),
+          };
+        });
 
+        // Create a new property document
+        const newProperty = new Property({
+          slug:
+            property.title.toLowerCase().replace(/[\s]+/g, "-") + "-" + Date.now(),
+          title: property.title,
+          price: property.price,
+          city: property.city,
+          country: property.country,
+          description: property.description,
+          university: property.university,
+          // images: property.images ? property.images.split(",") : [], // If images field is added in Excel
+          area: property.area,
+          services: property.services
+            ? property.services.split(",").map((s) => s.trim())
+            : [],
+          amenities,
+          roomTypes,
+          // rating: property.rating || null,
+        });
 
-// Route to upload the Excel file
-router.post('/upload-excel', uploadExcel.single('file'), async (req, res) => {
-  try {
-    const file = req.file;
-    if (!file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+        // Save the property to the database
+        const savedProperty = await newProperty.save();
+        addedProperties.push(savedProperty);
+      } catch (err) {
+        console.error(
+          `Error saving property "${property.title}":`,
+          err.message
+        );
+      }
     }
 
     res.status(200).json({
-      message: 'File uploaded successfully',
-      secure_url: file.path, // Cloudinary secure URL
+      message: "Properties added successfully",
+      addedProperties,
     });
   } catch (error) {
-    console.error('Error uploading file:', error.message);
-    res.status(500).json({ error: 'Failed to upload file' });
+    console.error("Error processing Excel file:", error.message);
+    res.status(500).json({ error: "Failed to process Excel file" });
   }
-});
+};
 
+// Route for uploading Excel files
+router.post(
+  "/upload-excel",
+  uploadExcel.single("file"),
+  uploadExcelToCloudinary,
+  (req, res) => {
+    try {
+      const cloudinaryResult = req.file.cloudinaryResult;
 
+      if (!cloudinaryResult) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      res.status(200).json({
+        message: "Excel file uploaded successfully",
+        secure_url: cloudinaryResult.secure_url, // Cloudinary secure URL for the uploaded file
+        public_id: cloudinaryResult.public_id, // Cloudinary public ID for the uploaded file
+      });
+    } catch (error) {
+      console.error("Error uploading file:", error.message);
+      res.status(500).json({ error: "Failed to upload file to Cloudinary" });
+    }
+  }
+);
 
 // Route to process the uploaded Excel file and add properties
-router.post('/process-excel', processExcelFile);
-
-
+router.post("/process-excel", processExcelFile);
 
 // Create a new property with image upload
 router.post("/property", uploadImage.array("images", 5), async (req, res) => {
@@ -122,55 +170,59 @@ router.post("/property", uploadImage.array("images", 5), async (req, res) => {
   }
 });
 
-router.put("/property/:id", uploadImage.array("images", 5), async (req, res) => {
-  const propertyId = req.params.id;
-  const updateData = req.body;
+router.put(
+  "/property/:id",
+  uploadImage.array("images", 5),
+  async (req, res) => {
+    const propertyId = req.params.id;
+    const updateData = req.body;
 
-  try {
-    const property = await Property.findById(propertyId);
+    try {
+      const property = await Property.findById(propertyId);
 
-    if (!property) {
-      return res.status(404).json({ message: "Property not found" });
+      if (!property) {
+        return res.status(404).json({ message: "Property not found" });
+      }
+
+      // Handle image uploads
+      if (req.body.replaceImages === "true") {
+        // Replace all images
+        const imageUrls = req.files.map((file) => file.path || file.secure_url);
+        property.images = imageUrls;
+      } else if (req.files.length > 0) {
+        // Add new images
+        const newImageUrls = req.files.map(
+          (file) => file.path || file.secure_url
+        );
+        property.images.push(...newImageUrls);
+      }
+
+      // Parse `services` and `amenities` if they are strings
+      if (typeof updateData.services === "string") {
+        updateData.services = JSON.parse(updateData.services);
+      }
+
+      if (typeof updateData.amenities === "string") {
+        updateData.amenities = JSON.parse(updateData.amenities);
+      }
+
+      if (typeof updateData.roomTypes === "string") {
+        updateData.roomTypes = JSON.parse(updateData.roomTypes);
+      }
+
+      Object.assign(property, updateData);
+      await property.save();
+
+      res.status(200).json({
+        message: "Property updated successfully",
+        updatedProperty: property,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error", error });
     }
-
-    // Handle image uploads
-    if (req.body.replaceImages === "true") {
-      // Replace all images
-      const imageUrls = req.files.map((file) => file.path || file.secure_url);
-      property.images = imageUrls;
-    } else if (req.files.length > 0) {
-      // Add new images
-      const newImageUrls = req.files.map(
-        (file) => file.path || file.secure_url
-      );
-      property.images.push(...newImageUrls);
-    }
-
-    // Parse `services` and `amenities` if they are strings
-    if (typeof updateData.services === "string") {
-      updateData.services = JSON.parse(updateData.services);
-    }
-
-    if (typeof updateData.amenities === "string") {
-      updateData.amenities = JSON.parse(updateData.amenities);
-    }
-
-    if (typeof updateData.roomTypes === "string") {
-      updateData.roomTypes = JSON.parse(updateData.roomTypes);
-    }
-
-    Object.assign(property, updateData);
-    await property.save();
-
-    res.status(200).json({
-      message: "Property updated successfully",
-      updatedProperty: property,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error", error });
   }
-});
+);
 
 router.delete("/property/:id", async (req, res) => {
   const propertyId = req.params.id;
