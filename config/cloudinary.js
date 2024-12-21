@@ -9,17 +9,32 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET, // Your Cloudinary API secret
 });
 
+// const testUpload = async () => {
+//   try {
+//     const result = await cloudinary.uploader.upload(
+//       "https://via.placeholder.com/150",
+//       {
+//         folder: "test",
+//       }
+//     );
+//     console.log("Cloudinary Test Upload Result:", result);
+//   } catch (error) {
+//     console.error("Error connecting to Cloudinary:", error);
+//   }
+// };
+
 const testUpload = async () => {
   try {
     const result = await cloudinary.uploader.upload(
-      "https://via.placeholder.com/150",
+      'C:\\Users\\dell\\Downloads\\uploads\\sample-properties.xlsx', // Path to your Excel file
       {
-        folder: "test",
+        resource_type: 'raw', // Ensure this is set to raw
+        folder: 'excel',
       }
     );
-    console.log("Cloudinary Test Upload Result:", result);
+    console.log('Upload Successful:', result);
   } catch (error) {
-    console.error("Error connecting to Cloudinary:", error);
+    console.error('Error Uploading File:', error.message);
   }
 };
 

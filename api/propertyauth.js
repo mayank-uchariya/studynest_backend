@@ -2,8 +2,8 @@ import express from "express";
 import Property from "../schema/PropertySchema.js";
 import {uploadImage, uploadExcel} from "../utils/multer.js";
 import cloudinary from "../config/cloudinary.js";
-import xlsx from 'xlsx';
-import fs from 'fs';
+import XLSX from 'xlsx';
+
 
 
 const router = express.Router();
@@ -20,125 +20,67 @@ const deleteImageFromCloudinary = async (publicId) => {
 };
 
 
-// router.post('/upload-properties', uploadExcel.single('file'), async (req, res) => {
-//   try {
-//       if (!req.file) {
-//           return res.status(400).json({ message: 'No file uploaded' });
-//       }
 
-//       const filePath = req.file.path;
+const processExcelFile = async (req, res) => {
+  try {
+    const { secure_url } = req.body; // Cloudinary secure URL from the request
+    if (!secure_url) {
+      return res.status(400).json({ error: 'No file URL provided' });
+    }
 
-//       // Read the Excel file
-//       const workbook = XLSX.readFile(filePath);
-//       const sheetName = workbook.SheetNames[0];
-//       const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    // Step 1: Download the Excel file
+    const response = await axios.get(secure_url, { responseType: 'arraybuffer' });
 
-//       if (!data || data.length === 0) {
-//           return res.status(400).json({ message: 'Excel file is empty or improperly formatted' });
-//       }
+    // Step 2: Parse the Excel file
+    const workbook = XLSX.read(response.data, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-//       // Validate required fields
-//       const requiredFields = ['title', 'price', 'city', 'country', 'description', 'university', 'area', 'services', 'amenities', 'roomTypes'];
-//       const missingFields = data.some(item => 
-//           requiredFields.some(field => !item[field])
-//       );
+    // Step 3: Save properties to the database
+    const addedProperties = [];
+    for (const property of jsonData) {
+      const newProperty = new Property({
+        name: property.name,
+        location: property.location,
+        price: property.price,
+        image: property.image,
+      });
+      const savedProperty = await newProperty.save();
+      addedProperties.push(savedProperty);
+    }
 
-//       if (missingFields) {
-//           return res.status(400).json({ 
-//               message: 'Some entries are missing required fields',
-//               requiredFields 
-//           });
-//       }
+    res.status(200).json({ message: 'Properties added successfully', addedProperties });
+  } catch (error) {
+    console.error('Error processing Excel file:', error.message);
+    res.status(500).json({ error: 'Failed to process Excel file' });
+  }
+};
 
-//       // Map and save properties
-//       const propertiesToSave = data.map((item) => ({
-//           slug: item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
-//           title: item.title?.trim(),
-//           price: Number(item.price),
-//           city: item.city?.trim(),
-//           country: item.country?.trim(),
-//           description: item.description?.trim(),
-//           university: item.university?.trim(),
-//           area: item.area,
-//           services: item.services ? item.services.split(',').map(s => s.trim()) : [],
-//           amenities: item.amenities
-//               ? item.amenities.split(';').map((amenity) => {
-//                   const [title, items] = amenity.split(':').map(s => s.trim());
-//                   return { 
-//                       title, 
-//                       items: items ? items.split(',').map(i => i.trim()) : []
-//                   };
-//               })
-//               : [],
-//           roomTypes: item.roomTypes
-//               ? item.roomTypes.split(';').map((roomType) => {
-//                   const [title, price] = roomType.split(':').map(s => s.trim());
-//                   return { 
-//                       title: title.trim(), 
-//                       price: Number(price) || 0 
-//                   };
-//               })
-//               : [],
-//       }));
 
-//       // Save properties to the database
-//       await Property.insertMany(propertiesToSave);
-
-//       res.status(200).json({ 
-//           message: 'Properties uploaded successfully!',
-//           count: propertiesToSave.length
-//       });
-//   } catch (error) {
-//       console.error('Property upload error:', error);
-//       res.status(500).json({ 
-//           message: 'Error uploading properties', 
-//           error: error.message 
-//       });
-//   }
-// });
-
+// Route to upload the Excel file
 router.post('/upload-excel', uploadExcel.single('file'), async (req, res) => {
   try {
-      // Check if file was uploaded
-      if (!req.file) {
-          return res.status(400).json({ message: 'No file uploaded' });
-      }
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
 
-      // Get the file URL from Cloudinary
-      const fileUrl = req.file.path;
-
-      // Download the file locally (Cloudinary stores as a raw resource)
-      const response = await fetch(fileUrl);
-      const buffer = await response.buffer();
-      const localFilePath = `./temp/${Date.now()}-${req.file.originalname}`;
-      fs.writeFileSync(localFilePath, buffer);
-
-      // Parse the Excel file
-      const workbook = xlsx.readFile(localFilePath);
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const data = xlsx.utils.sheet_to_json(sheet);
-
-      // Clean up the temp file
-      fs.unlinkSync(localFilePath);
-
-      // Map and validate data before saving
-      const properties = data.map((item) => ({
-          name: item.Name,
-          location: item.Location,
-          price: item.Price,
-          description: item.Description,
-          imageUrls: item.ImageUrls ? item.ImageUrls.split(',') : [],
-      }));
-
-      // Save to the database
-      await Property.insertMany(properties);
-
-      res.status(200).json({ message: 'Properties added successfully!' });
+    res.status(200).json({
+      message: 'File uploaded successfully',
+      secure_url: file.path, // Cloudinary secure URL
+    });
   } catch (error) {
-      console.error('Error processing file:', error);
-      res.status(500).json({ message: 'An error occurred while processing the file' });
+    console.error('Error uploading file:', error.message);
+    res.status(500).json({ error: 'Failed to upload file' });
   }
 });
+
+
+
+// Route to process the uploaded Excel file and add properties
+router.post('/process-excel', processExcelFile);
+
 
 
 // Create a new property with image upload

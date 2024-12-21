@@ -14,7 +14,7 @@ const imageStorage = new CloudinaryStorage({
 const excelStorage = new CloudinaryStorage({
     cloudinary,
     params: {
-        folder: 'properties/excel',
+        folder: 'excel',
         allowed_formats: ['xlsx', 'xls'],
         resource_type: 'raw'
     }
