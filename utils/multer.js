@@ -20,14 +20,20 @@ const excelStorage = new CloudinaryStorage({
     }
 });
 
-// Add file filter to double-check file type
 const fileFilter = (req, file, cb) => {
-    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+    console.log('File MIME Type:', file.mimetype); // Debug log
+    const allowedMimetypes = [
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel',
+    ];
+
+    if (allowedMimetypes.includes(file.mimetype)) {
         cb(null, true);
     } else {
-        cb(new Error('Invalid file type. Only XLSX files are allowed.'), false);
+        cb(new Error('Invalid file type. Only Excel files are allowed.'), false);
     }
 };
+
 
 const uploadImage = multer({ 
     storage: imageStorage,
