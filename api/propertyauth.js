@@ -2,7 +2,8 @@ import express from "express";
 import Property from "../schema/PropertySchema.js";
 import {uploadImage, uploadExcel} from "../utils/multer.js";
 import cloudinary from "../config/cloudinary.js";
-import XLSX from 'xlsx';
+import xlsx from 'xlsx';
+import fs from 'fs';
 
 
 const router = express.Router();
@@ -19,80 +20,123 @@ const deleteImageFromCloudinary = async (publicId) => {
 };
 
 
-router.post('/upload-properties', uploadExcel.single('file'), async (req, res) => {
+// router.post('/upload-properties', uploadExcel.single('file'), async (req, res) => {
+//   try {
+//       if (!req.file) {
+//           return res.status(400).json({ message: 'No file uploaded' });
+//       }
+
+//       const filePath = req.file.path;
+
+//       // Read the Excel file
+//       const workbook = XLSX.readFile(filePath);
+//       const sheetName = workbook.SheetNames[0];
+//       const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+//       if (!data || data.length === 0) {
+//           return res.status(400).json({ message: 'Excel file is empty or improperly formatted' });
+//       }
+
+//       // Validate required fields
+//       const requiredFields = ['title', 'price', 'city', 'country', 'description', 'university', 'area', 'services', 'amenities', 'roomTypes'];
+//       const missingFields = data.some(item => 
+//           requiredFields.some(field => !item[field])
+//       );
+
+//       if (missingFields) {
+//           return res.status(400).json({ 
+//               message: 'Some entries are missing required fields',
+//               requiredFields 
+//           });
+//       }
+
+//       // Map and save properties
+//       const propertiesToSave = data.map((item) => ({
+//           slug: item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+//           title: item.title?.trim(),
+//           price: Number(item.price),
+//           city: item.city?.trim(),
+//           country: item.country?.trim(),
+//           description: item.description?.trim(),
+//           university: item.university?.trim(),
+//           area: item.area,
+//           services: item.services ? item.services.split(',').map(s => s.trim()) : [],
+//           amenities: item.amenities
+//               ? item.amenities.split(';').map((amenity) => {
+//                   const [title, items] = amenity.split(':').map(s => s.trim());
+//                   return { 
+//                       title, 
+//                       items: items ? items.split(',').map(i => i.trim()) : []
+//                   };
+//               })
+//               : [],
+//           roomTypes: item.roomTypes
+//               ? item.roomTypes.split(';').map((roomType) => {
+//                   const [title, price] = roomType.split(':').map(s => s.trim());
+//                   return { 
+//                       title: title.trim(), 
+//                       price: Number(price) || 0 
+//                   };
+//               })
+//               : [],
+//       }));
+
+//       // Save properties to the database
+//       await Property.insertMany(propertiesToSave);
+
+//       res.status(200).json({ 
+//           message: 'Properties uploaded successfully!',
+//           count: propertiesToSave.length
+//       });
+//   } catch (error) {
+//       console.error('Property upload error:', error);
+//       res.status(500).json({ 
+//           message: 'Error uploading properties', 
+//           error: error.message 
+//       });
+//   }
+// });
+
+router.post('/upload-excel', uploadExcel.single('file'), async (req, res) => {
   try {
+      // Check if file was uploaded
       if (!req.file) {
           return res.status(400).json({ message: 'No file uploaded' });
       }
 
-      const filePath = req.file.path;
+      // Get the file URL from Cloudinary
+      const fileUrl = req.file.path;
 
-      // Read the Excel file
-      const workbook = XLSX.readFile(filePath);
-      const sheetName = workbook.SheetNames[0];
-      const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+      // Download the file locally (Cloudinary stores as a raw resource)
+      const response = await fetch(fileUrl);
+      const buffer = await response.buffer();
+      const localFilePath = `./temp/${Date.now()}-${req.file.originalname}`;
+      fs.writeFileSync(localFilePath, buffer);
 
-      if (!data || data.length === 0) {
-          return res.status(400).json({ message: 'Excel file is empty or improperly formatted' });
-      }
+      // Parse the Excel file
+      const workbook = xlsx.readFile(localFilePath);
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const data = xlsx.utils.sheet_to_json(sheet);
 
-      // Validate required fields
-      const requiredFields = ['title', 'price', 'city', 'country', 'description', 'university', 'area', 'services', 'amenities', 'roomTypes'];
-      const missingFields = data.some(item => 
-          requiredFields.some(field => !item[field])
-      );
+      // Clean up the temp file
+      fs.unlinkSync(localFilePath);
 
-      if (missingFields) {
-          return res.status(400).json({ 
-              message: 'Some entries are missing required fields',
-              requiredFields 
-          });
-      }
-
-      // Map and save properties
-      const propertiesToSave = data.map((item) => ({
-          slug: item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
-          title: item.title?.trim(),
-          price: Number(item.price),
-          city: item.city?.trim(),
-          country: item.country?.trim(),
-          description: item.description?.trim(),
-          university: item.university?.trim(),
-          area: item.area,
-          services: item.services ? item.services.split(',').map(s => s.trim()) : [],
-          amenities: item.amenities
-              ? item.amenities.split(';').map((amenity) => {
-                  const [title, items] = amenity.split(':').map(s => s.trim());
-                  return { 
-                      title, 
-                      items: items ? items.split(',').map(i => i.trim()) : []
-                  };
-              })
-              : [],
-          roomTypes: item.roomTypes
-              ? item.roomTypes.split(';').map((roomType) => {
-                  const [title, price] = roomType.split(':').map(s => s.trim());
-                  return { 
-                      title: title.trim(), 
-                      price: Number(price) || 0 
-                  };
-              })
-              : [],
+      // Map and validate data before saving
+      const properties = data.map((item) => ({
+          name: item.Name,
+          location: item.Location,
+          price: item.Price,
+          description: item.Description,
+          imageUrls: item.ImageUrls ? item.ImageUrls.split(',') : [],
       }));
 
-      // Save properties to the database
-      await Property.insertMany(propertiesToSave);
+      // Save to the database
+      await Property.insertMany(properties);
 
-      res.status(200).json({ 
-          message: 'Properties uploaded successfully!',
-          count: propertiesToSave.length
-      });
+      res.status(200).json({ message: 'Properties added successfully!' });
   } catch (error) {
-      console.error('Property upload error:', error);
-      res.status(500).json({ 
-          message: 'Error uploading properties', 
-          error: error.message 
-      });
+      console.error('Error processing file:', error);
+      res.status(500).json({ message: 'An error occurred while processing the file' });
   }
 });
 
