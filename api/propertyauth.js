@@ -332,22 +332,51 @@ router.get("/property", async (req, res) => {
 
 // search route
 // Search properties by city, country, or title
+// router.get("/properties/search", async (req, res) => {
+//   const { city, country, title } = req.query; // Extract query parameters
+
+//   try {
+//     // Create a dynamic filter object based on the provided query parameters
+//     const filter = {};
+//     if (city) filter.city = { $regex: city, $options: "i" }; // Case-insensitive regex match
+//     if (country) filter.country = { $regex: country, $options: "i" };
+//     if (title) filter.title = { $regex: title, $options: "i" };
+
+//     // Find properties matching the filter
+//     const properties = await Property.find(filter);
+
+//     if (properties.length === 0) {
+//       return res.status(404).json({ message: "No properties found" });
+//     }
+
+//     res.status(200).json({
+//       message: "Properties retrieved successfully",
+//       properties,
+//     });
+//   } catch (error) {
+//     console.error("Error searching properties:", error);
+//     res.status(500).json({ message: "Server error", error });
+//   }
+// });
+
 router.get("/properties/search", async (req, res) => {
-  const { city, country, title } = req.query; // Extract query parameters
+  const { city, country, title } = req.query;
+  const searchTerm = (city || country || title || '').toLowerCase();
 
   try {
-    // Create a dynamic filter object based on the provided query parameters
-    const filter = {};
-    if (city) filter.city = { $regex: city, $options: "i" }; // Case-insensitive regex match
-    if (country) filter.country = { $regex: country, $options: "i" };
-    if (title) filter.title = { $regex: title, $options: "i" };
+    const filter = {
+      $or: [
+        { city: { $regex: searchTerm, $options: "i" } },
+        { country: { $regex: searchTerm, $options: "i" } },
+        { title: { $regex: searchTerm, $options: "i" } },
+        { description: { $regex: searchTerm, $options: "i" } }
+      ]
+    };
 
-    // Find properties matching the filter
-    const properties = await Property.find(filter);
-
-    if (properties.length === 0) {
-      return res.status(404).json({ message: "No properties found" });
-    }
+    const properties = await Property.find(filter)
+      .limit(20)
+      .select('title city country price images type description')
+      .lean();
 
     res.status(200).json({
       message: "Properties retrieved successfully",
