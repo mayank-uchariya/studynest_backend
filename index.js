@@ -24,6 +24,8 @@ const allowedOrigins = [
   "http://studynests.com",
   "https://studynests.com",
   "https://studynestfrontend.vercel.app",
+  "https://studynestfrontend.vercel.app",
+  "https://studynest-frontend.vercel.app"
 ];
 
 app.use(
